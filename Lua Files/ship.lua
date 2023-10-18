@@ -1,0 +1,2 @@
+-- ship.lua
+-- objeto navio que será colocado no tabuleiro

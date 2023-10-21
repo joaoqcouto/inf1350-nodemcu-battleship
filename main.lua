@@ -18,8 +18,9 @@ function love.load ()
   require('Lua Files/clickboard')
   
   -- espaço na janela para os dois tabuleiros
-  love.window.setMode(1000,500)
-  love.graphics.setBackgroundColor(0,0,0)
+  love.window.setMode(board_pixels*2,board_pixels+200)
+  love.window.setTitle("BATTLESHIP")
+  love.graphics.setBackgroundColor(0.1,0.1,0.1)
   
   -- criando barcos
   ships = {
@@ -47,8 +48,18 @@ function love.load ()
   mqtt_client:subscribe({"battleship2", "nodebattleship1"}) -- mensagens do outro battleship, mensagens do nodemcu
 end
 
-function love.mousepressed (mx, my)
-
+-- em vez de keypressed aqui, vamos usar o nodeMCU como teclado
+-- como ele tem quatro botões, a implentação por nodeMCU tem quatro botões
+-- down = anda a mira no eixo vertical
+-- right = anda a mira no eixo horizontal
+-- enter = atira onde tá mirando
+-- esc = reinicia o jogo
+function love.keypressed(key)
+  if (key == "down") then
+    clickboard:down()
+  elseif (key == "right") then
+    clickboard:right()
+  end
 end
 
 function love.update(dt)

@@ -13,9 +13,9 @@ function love.load ()
   io.stdout:setvbuf("no")
   
   -- requiring files
-  Ship = require('Lua Files/ship')
-  Viewboard = require('Lua Files/viewboard')
-  Clickboard = require('Lua Files/clickboard')
+  require('Lua Files/ship')
+  require('Lua Files/viewboard')
+  require('Lua Files/clickboard')
   
   -- espaço na janela para os dois tabuleiros
   love.window.setMode(1000,500)
@@ -23,11 +23,11 @@ function love.load ()
   
   -- criando barcos
   ships = {
-    createShip(5, board_size, board_pixels, {r = 255, g = 255, b = 255}),
-    createShip(4, board_size, board_pixels, {r = 255, g = 255, b = 255}),
-    createShip(3, board_size, board_pixels, {r = 255, g = 255, b = 255}),
-    createShip(3, board_size, board_pixels, {r = 255, g = 255, b = 255}),
-    createShip(2, board_size, board_pixels, {r = 255, g = 255, b = 255})
+    createShip(5, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
+    createShip(4, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
+    createShip(3, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
+    createShip(3, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
+    createShip(2, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5})
   }
   
   -- criando tabuleiro
@@ -37,6 +37,9 @@ function love.load ()
   for i,ship in ipairs(ships) do
     viewboard:place_ship(ship)
   end
+  
+  -- criando tabuleiro de click
+  clickboard = createClickboard(board_size, board_pixels)
 
   -- conexão mqtt
   mqtt_client = mqtt.client.create("139.82.100.100", 7981, mqttcb)
@@ -55,9 +58,10 @@ function love.update(dt)
 end
 
 function love.draw ()
+  viewboard:draw()
+  clickboard:draw()
   for i,ship in ipairs(ships) do
     ship:draw()
-    viewboard:draw()
   end
 end
 

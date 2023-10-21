@@ -75,6 +75,9 @@ function createViewboard(size, pixels)
     end,
     
     draw = function(self)
+      love.graphics.setColor(0,0.1,0.5)
+      love.graphics.rectangle("fill", 0, 0, pixels, pixels)
+      love.graphics.setColor(255,255,255)
       for y=1, size do
         for x=1, size do
           love.graphics.rectangle("line", (x-1)*square_pixels, (y-1)*square_pixels, square_pixels, square_pixels)

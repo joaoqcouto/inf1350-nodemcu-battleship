@@ -11,6 +11,9 @@ function createViewboard(size, pixels)
     
     -- guarda os barcos que foram colocados no tabuleiro
     ships = {},
+    
+    -- guarda as tentativas erradas do oponente
+    misses = {},
 
     -- coloca barco no tabuleiro
     place_ship = function(self, ship)
@@ -79,10 +82,11 @@ function createViewboard(size, pixels)
         -- se o barco ocupa a posição de ataque
         if (ship:occupies(attackpos)) then
           ship:tag_hit(attackpos)
-          return true -- já acertou barco
+          return true -- acertou barco
         end
       end
       
+      table.insert(self.misses, 1, attackpos)
       return false -- não acertou nada
     end,
     
@@ -95,8 +99,17 @@ function createViewboard(size, pixels)
     end,
     
     draw = function(self)
+      -- mar
       love.graphics.setColor(0,0.1,0.5)
       love.graphics.rectangle("fill", 0, 0, pixels, pixels)
+      
+      -- alvos errados
+      love.graphics.setColor(0.3,0.4,0.7)
+      for i,misspos in ipairs(self.misses) do
+        love.graphics.rectangle("fill", (misspos.x-1)*square_pixels + square_pixels/4, (misspos.y-1)*square_pixels + square_pixels/4, square_pixels/2, square_pixels/2)
+      end
+      
+      -- grade
       love.graphics.setColor(255,255,255)
       for y=1, size do
         for x=1, size do

@@ -11,6 +11,10 @@ function createShip(size, board_size, board_pixels, color)
     y = 1,
     size = size,
     
+    -- posições que já foram acertadas e se já afundou
+    hits = {},
+    sunk = false,
+    
     -- necessários pra desenhar o barco
     board_size = board_size,
     board_pixels = board_pixels,
@@ -57,6 +61,13 @@ function createShip(size, board_size, board_pixels, color)
       return false
     end,
     
+    -- função que marca uma parte do barco como acertada
+    tag_hit = function(self, pos)
+      table.insert(self.hits, 1, pos)
+      
+      if (#self.hits >= self.size) then sunk = true end -- barco afundou
+    end,
+    
     draw = function(self)
       -- centro do quadrado inicial do barco, com offset do barco
       x = self.x*square_pixels - square_pixels/2 - ship_pixels
@@ -75,6 +86,13 @@ function createShip(size, board_size, board_pixels, color)
       
       love.graphics.setColor(color.r,color.g,color.b)
       love.graphics.rectangle("fill", x, y, w, h)
+      
+      -- desenhando acertos
+      love.graphics.setColor(0.75,0,0)
+      for i,hitpos in ipairs(self.hits) do
+        love.graphics.rectangle("fill", (hitpos.x-1)*square_pixels + square_pixels/4, (hitpos.y-1)*square_pixels + square_pixels/4, square_pixels/2, square_pixels/2)
+      end
+      
       love.graphics.setColor(255,255,255)
     end
   }

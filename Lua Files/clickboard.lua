@@ -35,6 +35,32 @@ function createClickboard(size, pixels)
         self.selected_square.x = self.selected_square.x + 1
       end
     end,
+    
+    -- vê se pode atacar uma posição
+    can_attack = function(self, pos)
+      
+      -- checa se não é uma posição já acertada
+      for i,hitpos in ipairs(self.hits) do
+        if (hitpos.x == pos.x and hitpos.y == pos.y) then return false end
+      end
+      
+      -- checa se não é uma posição já errada
+      for i,misspos in ipairs(self.misses) do
+        if (misspos.x == pos.x and misspos.y == pos.y) then return false end
+      end
+      
+      return true
+    end,
+    
+    -- marca acerto
+    add_hit = function(self, pos)
+      table.insert(self.hits, 1, pos)
+    end,
+    
+    -- marca erro
+    add_miss = function(self, pos)
+      table.insert(self.misses, 1, pos)
+    end,
 
     -- desenha tabuleiro
     -- LEMBRANDO = tudo é desenhado com um offset pra direita porque esse board vai ficar do lado do viewboard
@@ -56,6 +82,19 @@ function createClickboard(size, pixels)
       love.graphics.setLineWidth(5)
       love.graphics.rectangle("line", pixels+(self.selected_square.x-1)*square_pixels, (self.selected_square.y-1)*square_pixels, square_pixels, square_pixels)
       love.graphics.setLineWidth(1)
+      
+      -- desenhando acertos
+      love.graphics.setColor(0.75,0,0)
+      for i,hitpos in ipairs(self.hits) do
+        love.graphics.rectangle("fill", pixels+(hitpos.x-1)*square_pixels + square_pixels/4, (hitpos.y-1)*square_pixels + square_pixels/4, square_pixels/2, square_pixels/2)
+      end
+      
+      -- desenhando erros
+      love.graphics.setColor(0.4,0.6,0.4)
+      for i,misspos in ipairs(self.misses) do
+        love.graphics.rectangle("fill", pixels+(misspos.x-1)*square_pixels + square_pixels/4, (misspos.y-1)*square_pixels + square_pixels/4, square_pixels/2, square_pixels/2)
+      end
+      
       love.graphics.setColor(1,1,1)
     end
   }

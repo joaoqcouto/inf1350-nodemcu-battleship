@@ -74,6 +74,18 @@ function createViewboard(size, pixels)
       end
     end,
     
+    check_hit = function(self, attackpos)
+      for i,ship in ipairs(self.ships) do
+        -- se o barco ocupa a posição de ataque
+        if (ship:occupies(attackpos)) then
+          ship:tag_hit(attackpos)
+          return true -- já acertou barco
+        end
+      end
+      
+      return false -- não acertou nada
+    end,
+    
     draw = function(self)
       love.graphics.setColor(0,0.1,0.5)
       love.graphics.rectangle("fill", 0, 0, pixels, pixels)

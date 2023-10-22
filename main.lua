@@ -5,10 +5,39 @@ local mqtt = require("mqtt_library")
 -- 2 = vez do outro (computador ou outro player)
 -- 3 = vitória nossa
 -- 4 = vitória do outro
+local topico = 0
+local node_message = 0
 local turn = 1
   
-local function mqttcb (msg)
-  print(msg)
+function mqttcb(topic, message)
+  topico = topic
+  node_message = message
+
+  -- não tá na sua vez = não faz nada
+  if (turn ~= 1) then return end
+
+  --down
+  if (node_message == "3") then
+    clickboard:down()
+
+  -- right
+  elseif (node_message == "2") then
+    clickboard:right()
+    
+  -- attack
+  elseif (node_message == "1") then
+    selected_pos = {x = clickboard.selected_square.x, y=clickboard.selected_square.y}
+    
+    -- já atacou ali = não conta
+    if (not clickboard:can_attack(selected_pos)) then return end
+    
+    turn = 2 -- passa a vez pro outro jogador
+    
+    -- função que vai checar se acertou ou errou
+    check_hit(selected_pos)
+    
+    if (turn == 2) then opponent_play() end -- faz o outro jogador jogar, caso ele não tenha afundado tudo
+  end
 end
 
 function love.load ()
@@ -169,6 +198,7 @@ function love.draw ()
   love.graphics.setColor(1, 1, 1)
   love.graphics.setFont(font)
   love.graphics.print(string.format("NOSSOS AFUNDADOS: %d/5",friendlies_sunk,5), 20, 625, 0, 0.5)
+  love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   
   -- escrevendo vitória ou derrota, se for o caso

@@ -1,7 +1,7 @@
 -- wifi id e senha
 wificonf = {
-  ssid = "Reativos",
-  pwd = "reativos",
+  ssid = "wifi id",
+  pwd = "password",
   save = false,
   got_ip_cb = function (con)
                 print (con.IP)
@@ -10,3 +10,4 @@ wificonf = {
 
 wifi.sta.config(wificonf)
 print("modo: ".. wifi.setmode(wifi.STATION))
+

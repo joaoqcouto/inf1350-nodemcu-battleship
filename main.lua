@@ -177,14 +177,14 @@ function love.draw ()
     love.graphics.rectangle("fill", 0, 0, 1000, 750)
     
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("VITORIA", 340, 260)
+    love.graphics.print("VITORIA", 370, 260)
   
   elseif (turn == 4) then
     love.graphics.setColor(1, 0.5, 0.5, 0.5)
     love.graphics.rectangle("fill", 0, 0, 1000, 750)
     
     love.graphics.setColor(1, 1, 1)
-    love.graphics.print("DERROTA", 340, 260)
+    love.graphics.print("DERROTA", 350, 260)
 
   end
   love.graphics.setColor(1, 1, 1)

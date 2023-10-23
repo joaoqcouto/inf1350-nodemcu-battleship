@@ -215,8 +215,16 @@ function love.draw ()
   love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   
-  -- escrevendo vitória ou derrota, se for o caso
-  if (turn == 3) then -- vitória
+  -- escrevendo sobre o turno
+  if (turn == 1) then
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("SUA VEZ", 440, 520, 0, 0.5)
+  
+  elseif (turn == 2) then
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("VEZ DO OPONENTE", 350, 520, 0, 0.5)
+  
+  elseif (turn == 3) then -- vitória
     love.graphics.setColor(0.5, 0.5, 1, 0.5)
     love.graphics.rectangle("fill", 0, 0, 1000, 750)
     

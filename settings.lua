@@ -1,12 +1,12 @@
 settings = {
   -- which player is active
-  -- to play multiplayer, one of the programs have to use 'player 1' and the other 'player 2'
+  -- to play multiplayer, one of the programs have to use 'player1' and the other 'player2'
   player = "player1",
   
   -- internet connection settings
   internet = {
-    id = "wifiid",
-    password = "wifipassword",
+    id = "wifi-id",
+    password = "wifi-password",
     server="139.82.100.100",
     port=7981
   },

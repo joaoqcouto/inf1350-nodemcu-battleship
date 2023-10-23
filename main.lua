@@ -1,5 +1,6 @@
 local mqtt = require("mqtt_library")
 local settings = require("settings")
+local json = require("json/json")
 local player_settings = settings[settings.player].love
 
 -- controla de quem é a vez
@@ -7,40 +8,7 @@ local player_settings = settings[settings.player].love
 -- 2 = vez do outro (computador ou outro player)
 -- 3 = vitória nossa
 -- 4 = vitória do outro
-local topico = 0
-local node_message = 0
-local turn = 1
-  
-function mqttcb(topic, message)
-  topico = topic
-  node_message = message
-
-  -- não tá na sua vez = não faz nada
-  if (turn ~= 1) then return end
-
-  --down
-  if (node_message == "3") then
-    clickboard:down()
-
-  -- right
-  elseif (node_message == "2") then
-    clickboard:right()
-    
-  -- attack
-  elseif (node_message == "1") then
-    selected_pos = {x = clickboard.selected_square.x, y=clickboard.selected_square.y}
-    
-    -- já atacou ali = não conta
-    if (not clickboard:can_attack(selected_pos)) then return end
-    
-    turn = 2 -- passa a vez pro outro jogador
-    
-    -- função que vai checar se acertou ou errou
-    check_hit(selected_pos)
-    
-    if (turn == 2) then opponent_play() end -- faz o outro jogador jogar, caso ele não tenha afundado tudo
-  end
-end
+local turn = settings[settings.player].starting_turn
 
 function love.load ()
   local board_size = 8
@@ -86,27 +54,6 @@ function love.load ()
   
   -- criando tabuleiro de click
   clickboard = createClickboard(board_size, board_pixels)
-  
-  -- SÓ PARA SINGLEPLAYER = ITENS INIMIGOS  
-  -- barcos inimigos
-  enemy_ships = {
-    createShip(5, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
-    createShip(4, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
-    createShip(3, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
-    createShip(3, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5}),
-    createShip(2, board_size, board_pixels, {r = 0.5, g = 0.5, b = 0.5})
-  }
-  
-  -- tabuleiro inimigo
-  opponent_viewboard = createViewboard(board_size, board_pixels)
-  
-  -- colocando barcos no tabuleiro inimigo
-  for i,ship in ipairs(enemy_ships) do
-    opponent_viewboard:place_ship(ship)
-  end
-
-  -- clickboard inimigo
-  opponent_clickboard = createClickboard(board_size, board_pixels)
 
   -- conexão mqtt
   mqtt_client = mqtt.client.create(settings.internet.server, settings.internet.port, mqttcb)
@@ -114,20 +61,41 @@ function love.load ()
   mqtt_client:subscribe(player_settings.subscribe) -- mensagens do outro battleship, mensagens do nodemcu
 end
 
--- função para o inimigo jogar (ataca uma posição aleatória)
-function opponent_play()
-  -- tenta posições aleatórias até clicar em uma não clicada
-  while (true) do
-    attackpos = {x = math.random(1,opponent_clickboard.size), y = math.random(1,opponent_clickboard.size)}
-    if (opponent_clickboard:can_attack(attackpos)) then
-      print(string.format("opponent attacks (%i, %i)", attackpos.x, attackpos.y))
-      if viewboard:check_hit(attackpos) then
-        opponent_clickboard:add_hit(attackpos)
-      else
-        opponent_clickboard:add_miss(attackpos)
-      end
-      break
-    end
+-- função para mandar ataque para computador oponente
+function manda_ataque(msg)
+  print("mandando ataque")
+  mqtt_client:publish(player_settings.attack_queue,msg,0,0, 
+            function(client) print("mandou ataque") end)
+end
+
+-- função para mandar resposta de ataque para computador oponente
+function manda_resposta(msg)
+  print("mandando resposta do ataque")
+  mqtt_client:publish(player_settings.response_queue,msg,0,0, 
+            function(client) print("mandou resposta do ataque") end)
+end
+
+-- quando recebe jogada inimiga
+function opponent_play(message)
+  attackpos = json.decode(message)
+  
+  print(string.format("opponent attacks (%i, %i)", attackpos.x, attackpos.y))
+  
+  -- registra ataque, manda resposta
+  if viewboard:check_hit(attackpos) then
+    response = {
+      pos = attackpos,
+      result = "hit",
+      sunk = viewboard:ships_sunk()
+    }
+    manda_resposta(json.encode(response))
+  else
+    response = {
+      pos = attackpos,
+      result = "miss",
+      sunk = viewboard:ships_sunk()
+    }
+    manda_resposta(json.encode(response))
   end
   
   turn = 1
@@ -135,18 +103,65 @@ function opponent_play()
   if (friendlies_sunk == 5) then turn = 4 end
 end
 
--- checa se acertou ou não a posição
--- no singleplayer, basta checar o tabuleiro do oponente (PC)
--- no online, precisa mandar pelo MQTT a posição (só vai marcar o erro/acerto quando chegar a resposta)
-function check_hit(position)
-  print(string.format("player attacks (%i, %i)", position.x, position.y))
-  if opponent_viewboard:check_hit(position) then
-    clickboard:add_hit(position)
-  else
-    clickboard:add_miss(position)
+-- processa a resposta de um ataque, se acertou ou não
+function check_attack(message)
+  attackresponse = json.decode(message)
+  attackpos = attackresponse.pos
+  
+  print(string.format("result of attack on (%i, %i)", attackpos.x, attackpos.y))
+  if attackresponse.result == "hit" then
+    clickboard:add_hit(attackpos)
+  elseif attackresponse.result == "miss" then
+    clickboard:add_miss(attackpos)
   end
-  opponents_sunk = opponent_viewboard:ships_sunk()
+  
+  opponents_sunk = attackresponse.sunk
   if (opponents_sunk == 5) then turn = 3 end
+end
+
+
+function nodemcu_keyboard(node_message)
+  -- não tá na sua vez = não faz nada
+  if (turn ~= 1) then return end
+
+  --down
+  if (node_message == "3") then
+    clickboard:down()
+
+  -- right
+  elseif (node_message == "2") then
+    clickboard:right()
+    
+  -- attack
+  elseif (node_message == "1") then
+    selected_pos = {x = clickboard.selected_square.x, y=clickboard.selected_square.y}
+    
+    -- já atacou ali = não conta
+    if (not clickboard:can_attack(selected_pos)) then return end
+    
+    -- manda mensagem de ataque
+    manda_ataque(json.encode(selected_pos))
+    turn = 2 -- passa a vez pro outro jogador (vai ficar na vez dele até vir um ataque de volta)
+  end
+end
+  
+-- recebe mensagens mqtt
+function mqttcb(topic, message)
+  print("MENSAGEM RECEBIDA: "..topic)
+  
+  -- mensagem é na fila do nodemcu = é entrada de teclado
+  if (topic == player_settings.subscribe[2]) then
+    nodemcu_keyboard(message)
+  
+  -- mensagem é na fila do outro battleship = é ataque inimigo
+  elseif (topic == player_settings.subscribe[1]) then
+    opponent_play(message)
+    
+  -- mensagem é na fila do nosso battleship = é resposta de um ataque nosso
+  elseif (topic == player_settings.subscribe[3]) then
+    check_attack(message)
+    
+  end
 end
 
 -- em vez de keypressed aqui, vamos usar o nodeMCU como teclado
@@ -174,12 +189,9 @@ function love.keypressed(key)
     -- já atacou ali = não conta
     if (not clickboard:can_attack(selected_pos)) then return end
     
-    turn = 2 -- passa a vez pro outro jogador
-    
-    -- função que vai checar se acertou ou errou
-    check_hit(selected_pos)
-    
-    if (turn == 2) then opponent_play() end -- faz o outro jogador jogar, caso ele não tenha afundado tudo
+    -- manda mensagem de ataque
+    manda_ataque(json.encode(selected_pos))
+    turn = 2 -- passa a vez pro outro jogador (vai ficar na vez dele até vir um ataque de volta)
   end
 end
 
@@ -203,8 +215,16 @@ function love.draw ()
   love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   love.graphics.print(string.format("INIMIGOS AFUNDADOS: %d/5",opponents_sunk,5), 520, 625, 0, 0.5)
   
-  -- escrevendo vitória ou derrota, se for o caso
-  if (turn == 3) then -- vitória
+  -- escrevendo sobre o turno
+  if (turn == 1) then
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("SUA VEZ", 440, 520, 0, 0.5)
+  
+  elseif (turn == 2) then
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("VEZ DO OPONENTE", 350, 520, 0, 0.5)
+  
+  elseif (turn == 3) then -- vitória
     love.graphics.setColor(0.5, 0.5, 1, 0.5)
     love.graphics.rectangle("fill", 0, 0, 1000, 750)
     

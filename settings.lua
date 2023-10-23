@@ -1,12 +1,12 @@
 settings = {
   -- which player is active
-  -- to play multiplayer, one of the programs have to use 'player 1' and the other 'player 2'
+  -- to play multiplayer, one of the programs have to use 'player1' and the other 'player2'
   player = "player1",
   
   -- internet connection settings
   internet = {
-    id = "wifiid",
-    password = "wifipassword",
+    id = "wifi-id",
+    password = "wifi-password",
     server="139.82.100.100",
     port=7981
   },
@@ -23,10 +23,10 @@ settings = {
     
     love = {
       id = "battleship1",
-      subscribe = {"battleship2", "nodebattleship1"},
+      subscribe = {"battleship2", "nodebattleship1", "battleship1response"}, -- fila de receber ataque, de receber comando e de receber resposta de ataque
       node_queue = "lovebattleship1",
       attack_queue = "battleship1",
-      respond_queue = "battleship2"
+      response_queue = "battleship2response"
     }
   },
   
@@ -42,10 +42,10 @@ settings = {
     
     love = {
       id = "battleship2",
-      subscribe = {"battleship1", "nodebattleship2"},
+      subscribe = {"battleship1", "nodebattleship2", "battleship2response"}, -- fila de receber ataque, de receber comando e de receber resposta de ataque
       node_queue = "lovebattleship2",
       attack_queue = "battleship2",
-      respond_queue = "battleship1"
+      response_queue = "battleship1response"
     }
   }
 }

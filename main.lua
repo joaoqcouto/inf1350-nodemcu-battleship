@@ -1,4 +1,6 @@
 local mqtt = require("mqtt_library")
+local settings = require("settings")
+local player_settings = settings[settings.player].love
 
 -- controla de quem é a vez
 -- 1 = vez do jogador
@@ -107,9 +109,9 @@ function love.load ()
   opponent_clickboard = createClickboard(board_size, board_pixels)
 
   -- conexão mqtt
-  mqtt_client = mqtt.client.create("139.82.100.100", 7981, mqttcb)
-  mqtt_client:connect("battleship1")
-  mqtt_client:subscribe({"battleship2", "nodebattleship1"}) -- mensagens do outro battleship, mensagens do nodemcu
+  mqtt_client = mqtt.client.create(settings.internet.server, settings.internet.port, mqttcb)
+  mqtt_client:connect(player_settings.id)
+  mqtt_client:subscribe(player_settings.subscribe) -- mensagens do outro battleship, mensagens do nodemcu
 end
 
 -- função para o inimigo jogar (ataca uma posição aleatória)

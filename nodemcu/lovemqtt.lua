@@ -1,3 +1,7 @@
+-- settings
+local settings = require("settings")
+local node_settings = settings[settings.player].node
+
 local chave = 0
 local delay = 200000
 local last = 0
@@ -9,11 +13,11 @@ gpio.mode(sw2,gpio.INT,gpio.PULLUP)
 gpio.mode(sw3,gpio.INT,gpio.PULLUP)
 
 
-local meuid = "nodebattleship1"
-local m = mqtt.Client("clientid " .. meuid, 120)
+local meuid = node_settings.id
+local m = mqtt.Client(meuid, 120)
 
 function publica(c,chave)
-  c:publish("nodebattleship1",chave,0,0, 
+  c:publish(node_settings.publish,chave,0,0, 
             function(client) print("mandou! "..chave) end)
 end
 
@@ -27,7 +31,7 @@ function novaInscricao (c)
 end
 
 function conectado (client)
-  client:subscribe("lovebattleship1", 0, novaInscricao)
+  client:subscribe(node_settings.subscribe, 0, novaInscricao)
   gpio.trig(sw1, "down", 
     function (level,timestamp)
         if timestamp - last < delay then return end
@@ -51,6 +55,6 @@ function conectado (client)
     end)
 end 
 
-m:connect("139.82.100.100", 7981, false, 
+m:connect(settings.internet.server, settings.internet.port, false, 
              conectado,
              function(client, reason) print("failed reason: "..reason) end)

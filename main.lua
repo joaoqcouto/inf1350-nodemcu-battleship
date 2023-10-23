@@ -63,13 +63,15 @@ end
 
 -- função para mandar ataque para computador oponente
 function manda_ataque(msg)
-  mqtt_client:publish(player_settings.love.attack_queue,msg,0,0, 
+  print("mandando ataque")
+  mqtt_client:publish(player_settings.attack_queue,msg,0,0, 
             function(client) print("mandou ataque") end)
 end
 
 -- função para mandar resposta de ataque para computador oponente
 function manda_resposta(msg)
-  mqtt_client:publish(player_settings.love.response_queue,msg,0,0, 
+  print("mandando resposta do ataque")
+  mqtt_client:publish(player_settings.response_queue,msg,0,0, 
             function(client) print("mandou resposta do ataque") end)
 end
 
@@ -82,16 +84,16 @@ function opponent_play(message)
   -- registra ataque, manda resposta
   if viewboard:check_hit(attackpos) then
     response = {
-      "pos" = attackpos,
-      "result" = "hit",
-      "sunk" = viewboard:ships_sunk()
+      pos = attackpos,
+      result = "hit",
+      sunk = viewboard:ships_sunk()
     }
     manda_resposta(json.encode(response))
   else
     response = {
-      "pos" = attackpos,
-      "result" = "miss",
-      "sunk" = viewboard:ships_sunk()
+      pos = attackpos,
+      result = "miss",
+      sunk = viewboard:ships_sunk()
     }
     manda_resposta(json.encode(response))
   end
@@ -104,13 +106,13 @@ end
 -- processa a resposta de um ataque, se acertou ou não
 function check_attack(message)
   attackresponse = json.decode(message)
-  pos = attackresponse.pos
+  attackpos = attackresponse.pos
   
-  print(string.format("result of attack on (%i, %i)", pos.x, pos.y))
+  print(string.format("result of attack on (%i, %i)", attackpos.x, attackpos.y))
   if attackresponse.result == "hit" then
-    clickboard:add_hit(pos)
+    clickboard:add_hit(attackpos)
   elseif attackresponse.result == "miss" then
-    clickboard:add_miss(pos)
+    clickboard:add_miss(attackpos)
   end
   
   opponents_sunk = attackresponse.sunk
@@ -145,17 +147,18 @@ end
   
 -- recebe mensagens mqtt
 function mqttcb(topic, message)
+  print("MENSAGEM RECEBIDA: "..topic)
   
   -- mensagem é na fila do nodemcu = é entrada de teclado
   if (topic == player_settings.subscribe[2]) then
     nodemcu_keyboard(message)
   
   -- mensagem é na fila do outro battleship = é ataque inimigo
-  elseif (topic == player_settings.subscribe[1])
+  elseif (topic == player_settings.subscribe[1]) then
     opponent_play(message)
     
   -- mensagem é na fila do nosso battleship = é resposta de um ataque nosso
-  elseif (topic == player_settings.subscribe[3])
+  elseif (topic == player_settings.subscribe[3]) then
     check_attack(message)
     
   end
